@@ -253,3 +253,53 @@ table.rate-tbl{min-width:640px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
   font-size:13px;font-weight:600;padding:12px 18px;border-radius:12px;box-shadow:0 12px 36px rgba(19,22,41,.3);
   z-index:70;max-width:90vw}
+
+/* ══ 인증 화면 ══ */
+.auth-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.auth-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:32px 28px;box-shadow:0 18px 50px rgba(19,22,41,.10);text-align:center}
+.auth-logo{width:44px;height:44px;border-radius:12px;background:var(--ink);color:#fff;display:grid;place-items:center;
+  font-size:20px;font-weight:800;margin:0 auto 16px}
+.auth-card h1{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+.auth-sub{font-size:12.5px;font-weight:600;color:var(--ink-3);line-height:1.6;margin-bottom:20px}
+.auth-card code{background:var(--line-2);border-radius:5px;padding:1px 5px;font-size:11.5px;color:var(--ink)}
+.auth-f{display:block;text-align:left;margin-bottom:12px}
+.auth-f span{display:block;font-size:11.5px;font-weight:700;color:var(--ink-3);margin-bottom:5px}
+.auth-f input{width:100%;font-family:var(--font);font-size:13.5px;font-weight:600;border:1px solid var(--line);
+  border-radius:10px;padding:11px 12px;background:var(--card);color:var(--ink)}
+.auth-f input:focus{outline:2px solid var(--acc);outline-offset:-1px;border-color:transparent}
+.auth-submit{width:100%;justify-content:center;padding:12px;font-size:13.5px;margin-top:4px}
+.auth-err{background:var(--err-soft);color:var(--err);font-size:12px;font-weight:700;border-radius:9px;
+  padding:9px 11px;margin-bottom:12px;text-align:left}
+.auth-msg{background:var(--ok-soft);color:var(--ok);font-size:12px;font-weight:700;border-radius:9px;
+  padding:9px 11px;margin-bottom:12px;text-align:left}
+.auth-switch{margin-top:16px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.auth-switch button{background:none;border:none;cursor:pointer;color:var(--acc);font-weight:800;font-size:12.5px}
+.auth-switch button:hover{text-decoration:underline}
+.auth-gate-mail{font-size:12.5px;font-weight:700;color:var(--ink-2);background:var(--line-2);border-radius:9px;
+  padding:9px 11px;margin:4px 0 16px}
+
+/* ══ 상단 사용자 칩 ══ */
+.tb-user{display:flex;align-items:center;gap:8px;padding-left:14px;margin-left:2px;border-left:1px solid #343949}
+.tb-uemail{font-size:12px;font-weight:700;color:var(--top-txt);max-width:180px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.tb-ubtn{background:var(--top-2);border:1px solid #343949;border-radius:8px;padding:6px 10px;cursor:pointer;
+  color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
+.tb-ubtn:hover{background:#2E3344}
+
+/* ══ 사용자 관리 목록 ══ */
+.ulist{display:flex;flex-direction:column;gap:8px;margin:4px 0 4px}
+.urow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:11px;padding:11px 13px;
+  flex-wrap:wrap}
+.uinfo{flex:1;min-width:180px}
+.uinfo b{display:block;font-size:13px;font-weight:800;color:var(--ink);overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap}
+.uinfo b em{font-style:normal;font-size:11px;font-weight:700;color:var(--ink-3)}
+.uinfo>span{display:inline-flex;gap:5px;margin-top:5px}
+.uacts{display:flex;gap:6px;flex-wrap:wrap}
+.uacts .btn{padding:6px 10px;font-size:11.5px}
+.ub{font-size:10.5px;font-weight:800;border-radius:20px;padding:2px 8px}
+.ub.ok{background:var(--ok-soft);color:var(--ok)}
+.ub.err{background:var(--err-soft);color:var(--err)}
+.ub.warn{background:var(--warn-soft);color:var(--warn)}
+.ub.acc{background:var(--acc-soft);color:var(--acc)}

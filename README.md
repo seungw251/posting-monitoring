@@ -27,14 +27,19 @@ npm run dev
 - 스토리는 `Posting URL`에 `IG STORY` 입력
 - `Impression`, `Reach`, `Engagement`, `AD Value`, `PR Value` 컬럼은 있어도 무시되고 앱에서 재계산됨
 
+## 인증 · 접근 제어
+
+- **등록된 사용자만** 접근, **관리자가 승인한 사용자만 입장**. 최초 가입자가 자동으로 관리자가 된다.
+- 인증·권한·공유 데이터는 **Supabase**(Postgres + Auth + RLS)로 처리하며, 접근 제어는 서버측 **RLS**가 강제한다.
+- 실행하려면 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` 환경변수가 필요하다(없으면 "설정 필요" 화면).
+
 ## 배포
 
-`main` 브랜치에 푸시하면 GitHub Actions가 빌드 후 GitHub Pages로 배포한다.
-최초 1회만 저장소 Settings → Pages → Source를 `GitHub Actions`로 설정하면 된다.
-자세한 절차는 [SETUP.md](./SETUP.md) 참고.
+**Vercel + Supabase** 로 배포한다. Supabase 프로젝트 생성 → `supabase/schema.sql` 실행 →
+Vercel 환경변수 등록 → 최초 관리자 가입. 전체 절차는 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
 
 ## 데이터 저장
 
-현재 `localStorage` (`src/lib/storage.js`). 서버로 옮기려면 이 파일의 `loadState`/`saveState`만 교체하면 된다.
+승인된 사용자들이 공유하는 **Supabase** 백엔드(`src/lib/storage.js` → `projects`/`postings`/`app_settings`).
 
 자세한 도메인 규칙은 [CLAUDE.md](./CLAUDE.md) 참고.
