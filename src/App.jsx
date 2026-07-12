@@ -486,6 +486,8 @@ export default function App() {
               <tbody>
                 {filtered.map((r, i) => {
                   const eng = (r.like || 0) + (r.comment || 0);
+                  const story = isStory(r.postingUrl);
+                  const chk = story ? null : checkUrl(r.postingUrl); // 행당 1회만 검증
                   return (
                     <tr key={r.id} className={sel.includes(r.id) ? "on" : ""}>
                       <td className="l chk">
@@ -508,13 +510,12 @@ export default function App() {
                       </td>
                       <td className="l">
                         <div className="post-c">
-                          {isStory(r.postingUrl)
+                          {story
                             ? <span className="story-txt">IG STORY</span>
-                            : <a className={`plink ${checkUrl(r.postingUrl).ok ? "" : "bad"}`}
+                            : <a className={`plink ${chk.ok ? "" : "bad"}`}
                                 href={r.postingUrl} target="_blank" rel="noreferrer"
-                                title={checkUrl(r.postingUrl).ok ? r.postingUrl
-                                  : `링크 오류: ${checkUrl(r.postingUrl).reason}`}>
-                                {checkUrl(r.postingUrl).ok ? "" : "⚠ "}{r.postingUrl}
+                                title={chk.ok ? r.postingUrl : `링크 오류: ${chk.reason}`}>
+                                {chk.ok ? "" : "⚠ "}{r.postingUrl}
                               </a>}
                         </div>
                       </td>
