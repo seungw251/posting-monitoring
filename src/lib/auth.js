@@ -8,16 +8,17 @@ import { supabase } from "./supabase.js";
 /** 마스터(최고 관리자) 이메일 — DB 트리거의 값과 반드시 일치시킬 것 (supabase/schema.sql). */
 export const MASTER_EMAIL = "rengo@kakao.com";
 
-export async function signUp(email, password) {
-  const { data, error } = await supabase.auth.signUp({ email, password });
+/**
+ * 매직 링크 로그인(비밀번호 없음).
+ * 이메일로 로그인 링크를 보내고, 링크를 클릭하면 현재 origin으로 돌아와 세션이 생성된다.
+ * 처음 요청하는 이메일이면 계정도 함께 생성된다(가입=로그인 통합). 승인 여부는 RLS/게이트가 판단.
+ */
+export async function signInWithMagicLink(email) {
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.origin, shouldCreateUser: true },
+  });
   if (error) throw error;
-  return data;
-}
-
-export async function signIn(email, password) {
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return data;
 }
 
 export async function signOut() {
