@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 import ColFilter from "./components/ColFilter.jsx";
-import Auth from "./components/Auth.jsx";
-import AdminUsers from "./components/AdminUsers.jsx";
 import { isConfigured } from "./lib/supabase.js";
-import { getSession, onAuthChange, getMyProfile, signOut } from "./lib/auth.js";
 import { fmt, fmtShort, num, uid, timeAgo, stamp, handleOf } from "./lib/format.js";
 import { CHANNELS, DEFAULT_RATES, migrateRates, rateFor, tierLabel } from "./lib/rates.js";
 import { cellVal, checkUrl, computeRow, dedupeKey, isStory, postType } from "./lib/posting.js";
@@ -51,13 +48,6 @@ export default function App() {
   const [projModal, setProjModal] = useState(null);
   const [, setTick] = useState(0);
 
-  /* ── 인증 · 권한 ── */
-  const [session, setSession] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [authReady, setAuthReady] = useState(!isConfigured);
-  const [adminOpen, setAdminOpen] = useState(false);
-  const approved = profile?.status === "approved";
-
   const ratesRef = useRef(DEFAULT_RATES);
   const rowsRef = useRef([]);
   const projRef = useRef([DEFAULT_PROJECT]);
@@ -71,30 +61,6 @@ export default function App() {
   useEffect(() => { activeRef.current = activeId; }, [activeId]);
   useEffect(() => { syncRef.current = lastSync; }, [lastSync]);
   useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 30000); return () => clearInterval(t); }, []);
-
-  /* 세션·프로필 로드 + 변화 구독 */
-  useEffect(() => {
-    if (!isConfigured) return;
-    const load = async (s) => {
-      setSession(s);
-      try { setProfile(s ? await getMyProfile() : null); }
-      catch { setProfile(null); }
-    };
-    let unsub;
-    (async () => {
-      await load(await getSession());
-      setAuthReady(true);
-      unsub = onAuthChange(load);
-    })();
-    return () => unsub && unsub();
-  }, []);
-
-  const doSignOut = async () => {
-    try { await signOut(); } catch { /* 무시 */ }
-    setProfile(null); setSession(null);
-    setRows([]); rowsRef.current = [];
-    setReady(false);
-  };
 
   const showToast = (m) => {
     setToast(m);
@@ -116,7 +82,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!isConfigured || !approved) return;   // 승인된 사용자만 공유 데이터 로드
+    if (!isConfigured) return;   // Supabase 설정 시 공유 데이터 로드
     (async () => {
       try {
         const d = await loadState();
@@ -140,7 +106,7 @@ export default function App() {
       }
       setReady(true);
     })();
-  }, [persist, approved]);
+  }, [persist]);
 
   /* ── 동기화 (버튼 클릭 시에만) ── */
   const runSync = async () => {
@@ -340,12 +306,8 @@ export default function App() {
   }, [filtered]);
 
 
-  /* ── 인증 게이트 (모든 훅 이후) ── */
+  /* Supabase 미설정 시에만 안내 (로그인 없음 — 공개 대시보드) */
   if (!isConfigured) return <ConfigNeeded />;
-  if (!authReady) return <Splash msg="불러오는 중…" />;
-  if (!session) return <Auth />;
-  if (!profile) return <Splash msg="프로필 확인 중…" />;
-  if (!approved) return <Gate profile={profile} onSignOut={doSignOut} />;
 
   const active = projects.find((p) => p.id === activeId) || DEFAULT_PROJECT;
   const syncedAt = lastSync[activeId];
@@ -406,13 +368,6 @@ export default function App() {
                 <span className="ldot" />
                 {syncedAt ? `${stamp(syncedAt)} · ${timeAgo(syncedAt)}` : "동기화 필요"}
               </b>
-            </div>
-            <div className="tb-user">
-              {profile.role === "admin" && (
-                <button className="tb-ubtn" onClick={() => setAdminOpen(true)}>⚙ 사용자 관리</button>
-              )}
-              <span className="tb-uemail" title={profile.email}>{profile.email}</span>
-              <button className="tb-ubtn" onClick={doSignOut}>로그아웃</button>
             </div>
           </div>
         </div>
@@ -822,23 +777,7 @@ export default function App() {
         </div>
       )}
 
-      {adminOpen && profile.role === "admin" && (
-        <AdminUsers meId={session?.user?.id} onClose={() => setAdminOpen(false)} onToast={showToast} />
-      )}
-
       {toast && <div className="toast" role="status">{toast}</div>}
-    </div>
-  );
-}
-
-/* ── 인증 게이트 화면 ── */
-function Splash({ msg }) {
-  return (
-    <div className="auth-bg">
-      <div className="auth-card">
-        <div className="auth-logo">P</div>
-        <p className="auth-sub">{msg}</p>
-      </div>
     </div>
   );
 }
@@ -853,25 +792,6 @@ function ConfigNeeded() {
           Supabase 환경변수가 설정되지 않았습니다.<br />
           <code>VITE_SUPABASE_URL</code> 과 <code>VITE_SUPABASE_ANON_KEY</code> 를 설정한 뒤 다시 배포해 주세요.
         </p>
-      </div>
-    </div>
-  );
-}
-
-function Gate({ profile, onSignOut }) {
-  const rejected = profile.status === "rejected";
-  return (
-    <div className="auth-bg">
-      <div className="auth-card">
-        <div className="auth-logo">P</div>
-        <h1>{rejected ? "접근 거부됨" : "승인 대기 중"}</h1>
-        <p className="auth-sub">
-          {rejected
-            ? "계정 접근이 거부되었습니다. 관리자에게 문의해 주세요."
-            : "가입이 완료되었습니다. 관리자가 승인하면 입장할 수 있습니다."}
-        </p>
-        <div className="auth-gate-mail">{profile.email}</div>
-        <button className="btn auth-submit" onClick={onSignOut}>로그아웃</button>
       </div>
     </div>
   );
