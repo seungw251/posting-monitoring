@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../lib/supabase.js";
+import { MASTER_EMAIL } from "../lib/auth.js";
 
 /**
  * 관리자 전용 사용자 관리 (모달).
@@ -52,35 +53,45 @@ export default function AdminUsers({ meId, onClose, onToast }) {
           <div className="empty">사용자가 없습니다.</div>
         ) : (
           <div className="ulist">
-            {list.map((u) => (
+            {list.map((u) => {
+              const isMaster = (u.email || "").toLowerCase() === MASTER_EMAIL;
+              return (
               <div className="urow" key={u.id}>
                 <div className="uinfo">
                   <b>{u.email || u.id.slice(0, 8)}{u.id === meId && <em> (나)</em>}</b>
                   <span>
                     {badge(u.status)}
-                    {u.role === "admin" && <span className="ub acc">관리자</span>}
+                    {isMaster ? <span className="ub acc">마스터</span>
+                      : u.role === "admin" && <span className="ub acc">관리자</span>}
                   </span>
                 </div>
                 <div className="uacts">
-                  {u.status !== "approved" && (
-                    <button className="btn acc" disabled={busy === u.id}
-                      onClick={() => patch(u.id, { status: "approved" }, "승인")}>승인</button>
-                  )}
-                  {u.status !== "rejected" && u.id !== meId && (
-                    <button className="btn del" disabled={busy === u.id}
-                      onClick={() => patch(u.id, { status: "rejected" }, "거부")}>거부</button>
-                  )}
-                  {u.role !== "admin" && u.status === "approved" && (
-                    <button className="btn" disabled={busy === u.id}
-                      onClick={() => patch(u.id, { role: "admin" }, "관리자 지정")}>관리자로</button>
-                  )}
-                  {u.role === "admin" && u.id !== meId && (
-                    <button className="btn" disabled={busy === u.id}
-                      onClick={() => patch(u.id, { role: "member" }, "관리자 해제")}>일반으로</button>
+                  {isMaster ? (
+                    <span className="umaster">최고 관리자 · 변경 불가</span>
+                  ) : (
+                    <>
+                      {u.status !== "approved" && (
+                        <button className="btn acc" disabled={busy === u.id}
+                          onClick={() => patch(u.id, { status: "approved" }, "승인")}>승인</button>
+                      )}
+                      {u.status !== "rejected" && u.id !== meId && (
+                        <button className="btn del" disabled={busy === u.id}
+                          onClick={() => patch(u.id, { status: "rejected" }, "거부")}>거부</button>
+                      )}
+                      {u.role !== "admin" && u.status === "approved" && (
+                        <button className="btn" disabled={busy === u.id}
+                          onClick={() => patch(u.id, { role: "admin" }, "관리자 지정")}>관리자로</button>
+                      )}
+                      {u.role === "admin" && u.id !== meId && (
+                        <button className="btn" disabled={busy === u.id}
+                          onClick={() => patch(u.id, { role: "member" }, "관리자 해제")}>일반으로</button>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

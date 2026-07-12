@@ -13,23 +13,24 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- 마스터(최고 관리자) 계정 이메일. 이 계정은 가입 순서와 무관하게 항상 관리자·승인이며,
+-- 다른 관리자가 강등/거부할 수 없다. 마스터를 바꾸려면 아래 두 곳의 이메일을 함께 수정한다.
+--   (1) handle_new_user()  (2) protect_master()
+
 -- 신규 가입 시 프로필 자동 생성.
--- 첫 번째 사용자는 관리자(admin) + 승인(approved), 이후 사용자는 member + pending.
+-- 마스터 이메일만 관리자(admin)+승인(approved), 그 외 모든 사용자는 member + pending(승인 대기).
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer set search_path = public
 as $$
-declare
-  is_first boolean;
 begin
-  select count(*) = 0 into is_first from public.profiles;
   insert into public.profiles (id, email, role, status)
   values (
     new.id,
     new.email,
-    case when is_first then 'admin'    else 'member'  end,
-    case when is_first then 'approved' else 'pending' end
+    case when lower(new.email) = 'rengo@kakao.com' then 'admin'    else 'member'  end,
+    case when lower(new.email) = 'rengo@kakao.com' then 'approved' else 'pending' end
   );
   return new;
 end;
@@ -39,6 +40,26 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- 마스터 보호: 마스터 이메일 행은 항상 admin+approved로 강제된다(강등/거부 시도 무효화).
+create or replace function public.protect_master()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  if lower(new.email) = 'rengo@kakao.com' then
+    new.role := 'admin';
+    new.status := 'approved';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_master_row on public.profiles;
+create trigger protect_master_row
+  before insert or update on public.profiles
+  for each row execute function public.protect_master();
 
 -- ── 권한 판정 헬퍼 (RLS에서 사용) ─────────────────────────────────────────
 create or replace function public.is_approved()
@@ -110,6 +131,11 @@ begin
 end $$;
 
 -- ════════════════════════════════════════════════════════════════════════
--- 관리자 수동 지정(대안): 트리거로 자동 지정되지 않았거나 다른 계정을 관리자로 만들 때
---   update public.profiles set role='admin', status='approved' where email='you@example.com';
+-- 기존 데이터 보정 (마스터가 이미 가입했거나, 스키마 갱신 후 1회 실행)
+--   마스터를 확실히 관리자·승인으로: (미가입이면 0건 갱신 — 무해)
+update public.profiles set role='admin', status='approved' where lower(email)='rengo@kakao.com';
+--   (선택) 마스터가 아닌데 관리자가 된 계정을 일반으로 강등하려면 아래 주석 해제:
+-- update public.profiles set role='member' where lower(email)<>'rengo@kakao.com' and role='admin';
+--
+-- 관리자 추가 지정: 마스터가 앱의 "사용자 관리"에서 승인 후 "관리자로" 버튼으로 지정한다.
 -- ════════════════════════════════════════════════════════════════════════

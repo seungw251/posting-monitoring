@@ -5,6 +5,9 @@
  */
 import { supabase } from "./supabase.js";
 
+/** 마스터(최고 관리자) 이메일 — DB 트리거의 값과 반드시 일치시킬 것 (supabase/schema.sql). */
+export const MASTER_EMAIL = "rengo@kakao.com";
+
 export async function signUp(email, password) {
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) throw error;
