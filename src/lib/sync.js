@@ -11,7 +11,10 @@
  */
 import { computeRow, checkUrl } from "./posting.js";
 
-const API = import.meta.env.VITE_METRICS_API_URL;
+const API = import.meta.env?.VITE_METRICS_API_URL;
+
+/** 백엔드 응답 대기 상한(ms). 초과 시 동기화가 무한 대기하지 않고 실패로 끝난다. */
+const FETCH_TIMEOUT = 15000;
 
 /** 포스팅 링크에서 플랫폼 ID 추출 */
 export const postIdOf = (url = "") => {
@@ -24,13 +27,26 @@ export const postIdOf = (url = "") => {
 async function fetchMetrics(rows) {
   if (!API) return {}; // 백엔드 미연동 → 실측 지표 없음
   const ids = rows.map((r) => postIdOf(r.postingUrl)).filter(Boolean);
-  const res = await fetch(`${API}/metrics`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ids }),
-  });
-  if (!res.ok) throw new Error(`metrics API ${res.status}`);
-  return res.json();
+  if (!ids.length) return {}; // 수집 가능한 ID 없음 → 호출 생략
+
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT);
+  try {
+    const res = await fetch(`${API}/metrics`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids }),
+      signal: ctl.signal,
+    });
+    if (!res.ok) throw new Error(`metrics API ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    if (err.name === "AbortError")
+      throw new Error(`metrics API 응답 시간 초과(${FETCH_TIMEOUT / 1000}초)`);
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -40,13 +56,16 @@ async function fetchMetrics(rows) {
  */
 export async function syncRows(rows, rates, onTick = () => {}) {
   const targets = rows.filter((r) => checkUrl(r.postingUrl).ok);
-  const metrics = await fetchMetrics(targets);
-  const now = new Date().toISOString();
   const out = new Map();
+  const now = new Date().toISOString();
+  if (!targets.length) return { updated: out, syncedAt: now, count: 0 };
+
+  const metrics = await fetchMetrics(targets);
 
   targets.forEach((r, i) => {
     const m = metrics[postIdOf(r.postingUrl)] || {};
-    const merged = { ...r, ...m, adOverride: "" };
+    // 실측 지표(m)만 덮어쓰고, 사용자가 지정한 adOverride 등 기존 값은 보존한다.
+    const merged = { ...r, ...m };
     out.set(r.id, { ...r, ...computeRow(merged, rates), syncedAt: now });
     onTick(Math.round(((i + 1) / targets.length) * 100));
   });

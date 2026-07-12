@@ -82,6 +82,7 @@ export const computeRow = (f, rates) => {
     comment: story ? 0 : num(f.comment),
     adValue,
     prValue,
+    adOverride: f.adOverride ?? "",
     syncedAt: f.syncedAt || null,
   };
 };
