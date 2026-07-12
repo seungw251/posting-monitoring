@@ -27,19 +27,20 @@ npm run dev
 - 스토리는 `Posting URL`에 `IG STORY` 입력
 - `Impression`, `Reach`, `Engagement`, `AD Value`, `PR Value` 컬럼은 있어도 무시되고 앱에서 재계산됨
 
-## 인증 · 접근 제어
+## 접근 · 공유
 
-- **등록된 사용자만** 접근, **관리자가 승인한 사용자만 입장**. 최초 가입자가 자동으로 관리자가 된다.
-- 인증·권한·공유 데이터는 **Supabase**(Postgres + Auth + RLS)로 처리하며, 접근 제어는 서버측 **RLS**가 강제한다.
+- **로그인 없음(공개 대시보드).** 사이트 링크를 아는 사람은 누구나 조회·업로드·삭제·수정할 수 있다(의도된 설계).
+- 데이터는 **Supabase**(Postgres) 백엔드에 저장되어 모두가 공유한다.
 - 실행하려면 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` 환경변수가 필요하다(없으면 "설정 필요" 화면).
+- 접근 제어가 필요해지면 `supabase/schema.sql`의 RLS 정책을 인증 기반으로 되돌리면 된다.
 
 ## 배포
 
 **Vercel + Supabase** 로 배포한다. Supabase 프로젝트 생성 → `supabase/schema.sql` 실행 →
-Vercel 환경변수 등록 → 최초 관리자 가입. 전체 절차는 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
+Vercel 환경변수 등록. 전체 절차는 [DEPLOYMENT.md](./DEPLOYMENT.md) 참고.
 
 ## 데이터 저장
 
-승인된 사용자들이 공유하는 **Supabase** 백엔드(`src/lib/storage.js` → `projects`/`postings`/`app_settings`).
+모두가 공유하는 **Supabase** 백엔드(`src/lib/storage.js` → `projects`/`postings`/`app_settings`).
 
 자세한 도메인 규칙은 [CLAUDE.md](./CLAUDE.md) 참고.
