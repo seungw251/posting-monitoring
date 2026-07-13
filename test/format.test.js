@@ -17,6 +17,11 @@ test("fmtShort: 억/만 단위 축약", () => {
   assert.equal(fmtShort(120000), "12만");
   assert.equal(fmtShort(100000000), "1억");
   assert.equal(fmtShort(150000000), "1.5억");
+  // digits 지정: 소수 자릿수 고정(항상 1자리 표시)
+  assert.equal(fmtShort(191000, 1), "19.1만");
+  assert.equal(fmtShort(250000, 1), "25.0만");
+  assert.equal(fmtShort(1250000, 1), "125.0만");
+  assert.equal(fmtShort(9999, 1), "9,999"); // 1만 미만은 그대로
 });
 
 test("serialToISO: 엑셀 시리얼 → ISO", () => {
