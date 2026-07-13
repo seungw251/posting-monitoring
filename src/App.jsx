@@ -108,6 +108,25 @@ export default function App() {
     })();
   }, [persist]);
 
+  /* ── 행 선택 · 선택 삭제 ── */
+  const toggleSel = (id) =>
+    setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  const removeSelected = async () => {
+    if (!sel.length) return;
+    const del = new Set(sel);
+    const n = sel.length;
+    const next = rowsRef.current.filter((r) => !del.has(r.id));
+    setRows(next); rowsRef.current = next;
+    setSel([]);
+    try {
+      await persist({ rows: next });
+      showToast(`${n}건 삭제되었습니다`);
+    } catch (e) {
+      showToast(`삭제에 실패했습니다: ${e.message}`);
+    }
+  };
+
   /* ── 동기화 (버튼 클릭 시에만) ── */
   const runSync = async () => {
     const pid = activeRef.current;
