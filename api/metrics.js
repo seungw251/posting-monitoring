@@ -34,7 +34,9 @@ export async function collectApify(items, fetchImpl = fetch) {
   const urls = [...new Set((items || []).map((it) => it?.url).filter(Boolean))];
   if (!urls.length) return {};
 
-  const input = { directUrls: urls, resultsType: "posts", resultsLimit: 1, addParentData: false };
+  // addParentData: true → 포스트에 소유자(프로필) 데이터가 붙어 팔로워 수를 수집할 수 있다.
+  // false면 ownerFollowersCount가 비어 팔로워가 갱신되지 않는다.
+  const input = { directUrls: urls, resultsType: "posts", resultsLimit: 1, addParentData: true };
   const endpoint = `https://api.apify.com/v2/acts/${APIFY_ACTOR}/run-sync-get-dataset-items`
     + `?token=${encodeURIComponent(APIFY_TOKEN)}`;
   const res = await fetchImpl(endpoint, {

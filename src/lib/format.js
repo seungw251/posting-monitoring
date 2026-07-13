@@ -11,10 +11,16 @@ export const uid = () =>
 
 export const fmt = (n) => (n || 0).toLocaleString("ko-KR");
 
-export const fmtShort = (n) => {
+// digits 지정 시 해당 소수 자릿수로 고정(예: fmtShort(191000, 1) → "19.1만").
+// 미지정 시 기존 동작(만은 반올림 정수, 억은 나머지 있을 때만 1자리).
+export const fmtShort = (n, digits) => {
   n = n || 0;
-  if (n >= 100000000) return (n / 100000000).toFixed(n % 100000000 ? 1 : 0) + "억";
-  if (n >= 10000) return Math.round(n / 10000).toLocaleString("ko-KR") + "만";
+  const unit = (v, u, d) => {
+    const [int, dec] = v.toFixed(d).split(".");
+    return Number(int).toLocaleString("ko-KR") + (dec ? "." + dec : "") + u;
+  };
+  if (n >= 100000000) return unit(n / 100000000, "억", digits ?? (n % 100000000 ? 1 : 0));
+  if (n >= 10000) return unit(n / 10000, "만", digits ?? 0);
   return n.toLocaleString("ko-KR");
 };
 
