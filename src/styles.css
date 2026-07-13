@@ -24,7 +24,7 @@
 .pbtn{display:flex;align-items:center;gap:8px;background:var(--top-2);border:1px solid #343949;border-radius:9px;
   padding:7px 11px;cursor:pointer;color:#fff;font-size:13.5px;font-weight:700}
 .pbtn:hover{background:#2E3344}
-.pbtn .sw{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.pbtn .sw{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .pbtn em{font-style:normal;color:#8B90A3;font-size:11px;font-weight:700}
 .pbtn .car{color:#8B90A3;font-size:10px}
 .pmenu{position:absolute;top:44px;left:0;z-index:40;background:var(--top);border:1px solid #343949;border-radius:12px;
@@ -40,8 +40,8 @@
   border-radius:8px;cursor:pointer;color:var(--top-txt);font-size:13px;font-weight:600;text-align:left}
 .pmenu-l button:hover{background:var(--top-2);color:#fff}
 .pmenu-l button.on{background:var(--top-2);color:#fff}
-.pmenu-l .chk{width:13px;flex-shrink:0;color:#4C8DFF;font-size:12px}
-.pmenu-l .sw{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.pmenu-l .chk{width:13px;flex:none;color:#4C8DFF;font-size:12px}
+.pmenu-l .sw{width:10px;height:10px;border-radius:50%;flex:none}
 .pmenu-l span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pmenu-l i{font-style:normal;font-size:11px;font-weight:700;color:#7A8095}
 .pmenu-f{border-top:1px solid #343949;padding:5px}
