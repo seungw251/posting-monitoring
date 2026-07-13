@@ -157,8 +157,8 @@ th.chk,td.chk{width:40px;padding-right:0}
 th.chk input,td.chk input{width:15px;height:15px;cursor:pointer;accent-color:var(--acc);margin:0}
 tbody tr.on td{background:var(--acc-soft)}
 tbody tr.on:hover td{background:#E5E5F8}
-.tblwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:auto;
-  max-height:calc(100vh - 300px)}
+.tblwrap{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 300px)}
 table{width:auto;border-collapse:collapse}
 th{background:#FAFBFD;font-size:10.5px;font-weight:800;color:var(--ink-3);text-align:left;
   padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
