@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 import ColFilter from "./components/ColFilter.jsx";
+import Auth from "./components/Auth.jsx";
 import { isConfigured } from "./lib/supabase.js";
+import { getSession, onAuthChange, signOut } from "./lib/auth.js";
 import { fmt, fmtShort, num, uid, timeAgo, stamp } from "./lib/format.js";
 import { CHANNELS, DEFAULT_RATES, migrateRates, rateFor, tierLabel } from "./lib/rates.js";
 import { cellVal, checkUrl, computeRow, isStory, postType } from "./lib/posting.js";
@@ -55,6 +57,11 @@ export default function App() {
   const [projModal, setProjModal] = useState(null);
   const [, setTick] = useState(0);
 
+  /* ── 인증 ── */
+  const [session, setSession] = useState(null);
+  const [authReady, setAuthReady] = useState(!isConfigured);
+  const [recovery, setRecovery] = useState(false);
+
   const ratesRef = useRef(DEFAULT_RATES);
   const rowsRef = useRef([]);
   const projRef = useRef([DEFAULT_PROJECT]);
@@ -68,6 +75,28 @@ export default function App() {
   useEffect(() => { activeRef.current = activeId; }, [activeId]);
   useEffect(() => { syncRef.current = lastSync; }, [lastSync]);
   useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 30000); return () => clearInterval(t); }, []);
+
+  /* 세션 로드 + 변화 구독 (비밀번호 재설정 이벤트 포함) */
+  useEffect(() => {
+    if (!isConfigured) return;
+    let unsub;
+    (async () => {
+      setSession(await getSession());
+      setAuthReady(true);
+      unsub = onAuthChange((event, s) => {
+        setSession(s);
+        if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      });
+    })();
+    return () => unsub && unsub();
+  }, []);
+
+  const doSignOut = async () => {
+    try { await signOut(); } catch { /* 무시 */ }
+    setSession(null); setRecovery(false);
+    setRows([]); rowsRef.current = [];
+    setReady(false);
+  };
 
   const showToast = (m) => {
     setToast(m);
@@ -89,7 +118,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!isConfigured) return;   // Supabase 설정 시 공유 데이터 로드
+    if (!isConfigured || !session) return;   // 로그인 사용자만 데이터 로드
     (async () => {
       try {
         const d = await loadState();
@@ -113,7 +142,7 @@ export default function App() {
       }
       setReady(true);
     })();
-  }, [persist]);
+  }, [persist, session]);
 
   /* ── 행 선택 · 선택 삭제 ── */
   const toggleSel = (id) =>
@@ -352,8 +381,11 @@ export default function App() {
   }, [filtered]);
 
 
-  /* Supabase 미설정 시에만 안내 (로그인 없음 — 공개 대시보드) */
+  /* ── 인증 게이트 (모든 훅 이후) ── */
   if (!isConfigured) return <ConfigNeeded />;
+  if (!authReady) return <Splash msg="불러오는 중…" />;
+  if (recovery) return <Auth recovery onRecoveryDone={() => setRecovery(false)} />;
+  if (!session) return <Auth />;
 
   const active = projects.find((p) => p.id === activeId) || DEFAULT_PROJECT;
   const syncedAt = lastSync[activeId];
@@ -414,6 +446,10 @@ export default function App() {
                 <span className="ldot" />
                 {syncedAt ? `${stamp(syncedAt)} · ${timeAgo(syncedAt)}` : "동기화 필요"}
               </b>
+            </div>
+            <div className="tb-user">
+              <span className="tb-uemail" title={session.user?.email}>{session.user?.email}</span>
+              <button className="tb-ubtn" onClick={doSignOut}>로그아웃</button>
             </div>
           </div>
         </div>
@@ -847,6 +883,17 @@ function Delta({ prev, cur }) {
   if (!d) return null;
   const up = d > 0;
   return <i className={`dlt ${up ? "up" : "down"}`}>{up ? "▲" : "▼"}{fmt(Math.abs(d))}</i>;
+}
+
+function Splash({ msg }) {
+  return (
+    <div className="auth-bg">
+      <div className="auth-card">
+        <div className="auth-logo">P</div>
+        <p className="auth-sub">{msg}</p>
+      </div>
+    </div>
+  );
 }
 
 function ConfigNeeded() {

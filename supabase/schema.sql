@@ -1,10 +1,9 @@
 -- ════════════════════════════════════════════════════════════════════════
--- Posting Monitor — Supabase 스키마 (로그인 없는 공개 공유 데이터)
+-- Posting Monitor — Supabase 스키마 (로그인 사용자 공유 데이터)
 -- Supabase 대시보드 → SQL Editor 에 붙여넣고 1회 실행한다.
 --
--- ⚠️ 로그인/인증 없음(의도된 설계). 사이트 링크를 아는 사람은 누구나
---    데이터를 조회·업로드·삭제·수정할 수 있다. 접근 제어가 필요해지면
---    RLS 정책을 인증 기반으로 되돌리면 된다.
+-- 접근 제어: 로그인(가입)한 사용자만 데이터를 조회·편집할 수 있다(RLS).
+-- 인증은 Supabase Auth의 이메일+비밀번호를 사용하며, 별도 승인 절차는 없다.
 -- ════════════════════════════════════════════════════════════════════════
 
 -- ── 공유 데이터 테이블 ────────────────────────────────────────────────────
@@ -30,7 +29,7 @@ create table if not exists public.app_settings (
   last_sync jsonb
 );
 
--- ── RLS: 공개(익명 포함 전체 CRUD) ────────────────────────────────────────
+-- ── RLS: 로그인 사용자만 전체 CRUD ────────────────────────────────────────
 alter table public.projects     enable row level security;
 alter table public.postings     enable row level security;
 alter table public.app_settings enable row level security;
@@ -39,11 +38,12 @@ do $$
 declare t text;
 begin
   foreach t in array array['projects','postings','app_settings'] loop
-    -- 이전(인증 기반) 정책이 있으면 제거
+    -- 이전 정책(공개/기타)이 있으면 제거
     execute format('drop policy if exists %I_all    on public.%I;', t, t);
     execute format('drop policy if exists %I_public on public.%I;', t, t);
+    execute format('drop policy if exists %I_auth   on public.%I;', t, t);
     execute format(
-      'create policy %I_public on public.%I for all using (true) with check (true);',
+      'create policy %I_auth on public.%I for all using (auth.uid() is not null) with check (auth.uid() is not null);',
       t, t
     );
   end loop;
