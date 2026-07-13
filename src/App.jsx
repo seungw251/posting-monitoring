@@ -887,7 +887,7 @@ function Delta({ prev, cur }) {
 
 function Splash({ msg }) {
   return (
-    <div className="auth-bg">
+    <div className="pm auth-bg">
       <div className="auth-card">
         <div className="auth-logo">P</div>
         <p className="auth-sub">{msg}</p>
@@ -898,7 +898,7 @@ function Splash({ msg }) {
 
 function ConfigNeeded() {
   return (
-    <div className="auth-bg">
+    <div className="pm auth-bg">
       <div className="auth-card">
         <div className="auth-logo">P</div>
         <h1>설정 필요</h1>

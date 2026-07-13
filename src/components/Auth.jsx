@@ -1,9 +1,15 @@
 import { useState } from "react";
 import { signIn, signUp, sendPasswordReset, updatePassword } from "../lib/auth.js";
 
+const META = {
+  login:  { title: "로그인",          sub: "등록된 계정으로 로그인하세요.",              cta: "로그인" },
+  signup: { title: "회원가입",         sub: "이메일과 비밀번호로 계정을 만드세요.",        cta: "가입하기" },
+  forgot: { title: "비밀번호 찾기",     sub: "가입한 이메일로 재설정 링크를 보내드립니다.", cta: "재설정 메일 보내기" },
+  reset:  { title: "새 비밀번호 설정",  sub: "새로 사용할 비밀번호를 입력하세요.",          cta: "비밀번호 변경" },
+};
+
 /**
- * 인증 화면.
- * mode: login | signup | forgot
+ * 인증 화면. mode: login | signup | forgot | reset
  * recovery=true 이면 비밀번호 재설정(새 비밀번호 입력) 화면으로 시작.
  */
 export default function Auth({ recovery = false, onRecoveryDone }) {
@@ -11,11 +17,12 @@ export default function Auth({ recovery = false, onRecoveryDone }) {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
+  const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
 
-  const go = (m) => { setMode(m); setErr(""); setMsg(""); };
+  const go = (m) => { setMode(m); setErr(""); setMsg(""); setPw(""); setPw2(""); };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -42,69 +49,72 @@ export default function Auth({ recovery = false, onRecoveryDone }) {
     }
   };
 
-  const title = mode === "signup" ? "회원가입" : mode === "forgot" ? "비밀번호 찾기"
-    : mode === "reset" ? "새 비밀번호 설정" : "Posting Monitor";
-  const sub = mode === "signup" ? "이메일과 비밀번호로 계정을 만드세요."
-    : mode === "forgot" ? "가입한 이메일로 재설정 링크를 보내드립니다."
-    : mode === "reset" ? "새로 사용할 비밀번호를 입력하세요."
-    : "등록된 계정으로 로그인하세요.";
+  const meta = META[mode];
+  const pwType = showPw ? "text" : "password";
 
   return (
-    <div className="auth-bg">
-      <form className="auth-card" onSubmit={submit}>
-        <div className="auth-logo">P</div>
-        <h1>{title}</h1>
-        <p className="auth-sub">{sub}</p>
+    <div className="pm auth-bg">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <div className="auth-logo">P</div>
+          <span className="auth-wordmark">Posting Monitor</span>
+        </div>
+        <h1 className="auth-title">{meta.title}</h1>
+        <p className="auth-sub">{meta.sub}</p>
 
-        {mode !== "reset" && (
-          <label className="auth-f">
-            <span>이메일</span>
-            <input type="email" required autoComplete="email" value={email}
-              onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          </label>
-        )}
+        <form className="auth-form" onSubmit={submit}>
+          {mode !== "reset" && (
+            <label className="auth-f">
+              <span>이메일</span>
+              <input className="auth-in" type="email" required autoFocus autoComplete="email"
+                value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+            </label>
+          )}
 
-        {mode !== "forgot" && (
-          <label className="auth-f">
-            <span>{mode === "reset" ? "새 비밀번호" : "비밀번호"}</span>
-            <input type="password" required minLength={6}
-              autoComplete={mode === "login" ? "current-password" : "new-password"}
-              value={pw} onChange={(e) => setPw(e.target.value)} placeholder="6자 이상" />
-          </label>
-        )}
+          {mode !== "forgot" && (
+            <label className="auth-f">
+              <span>{mode === "reset" ? "새 비밀번호" : "비밀번호"}</span>
+              <div className="auth-pw">
+                <input className="auth-in" type={pwType} required minLength={6}
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  value={pw} onChange={(e) => setPw(e.target.value)} placeholder="6자 이상" />
+                <button type="button" className="auth-eye" onClick={() => setShowPw((v) => !v)}
+                  aria-label={showPw ? "비밀번호 숨기기" : "비밀번호 표시"}>
+                  {showPw ? "숨기기" : "보기"}
+                </button>
+              </div>
+            </label>
+          )}
 
-        {mode === "reset" && (
-          <label className="auth-f">
-            <span>새 비밀번호 확인</span>
-            <input type="password" required minLength={6} autoComplete="new-password"
-              value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="다시 입력" />
-          </label>
-        )}
+          {mode === "reset" && (
+            <label className="auth-f">
+              <span>새 비밀번호 확인</span>
+              <div className="auth-pw">
+                <input className="auth-in" type={pwType} required minLength={6} autoComplete="new-password"
+                  value={pw2} onChange={(e) => setPw2(e.target.value)} placeholder="다시 입력" />
+              </div>
+            </label>
+          )}
 
-        {err && <div className="auth-err">{err}</div>}
-        {msg && <div className="auth-msg">{msg}</div>}
+          {mode === "login" && (
+            <button type="button" className="auth-forgot" onClick={() => go("forgot")}>비밀번호를 잊으셨나요?</button>
+          )}
 
-        <button className="btn acc auth-submit" type="submit" disabled={busy}>
-          {busy ? "처리 중…"
-            : mode === "signup" ? "가입하기"
-            : mode === "forgot" ? "재설정 메일 보내기"
-            : mode === "reset" ? "비밀번호 변경"
-            : "로그인"}
-        </button>
+          {err && <div className="auth-msg err">⚠ {err}</div>}
+          {msg && <div className="auth-msg ok">✓ {msg}</div>}
 
-        {mode === "login" && (
-          <div className="auth-switch">
-            <button type="button" onClick={() => go("forgot")}>비밀번호를 잊으셨나요?</button>
-            <span> · </span>
-            계정이 없나요? <button type="button" onClick={() => go("signup")}>회원가입</button>
-          </div>
-        )}
-        {(mode === "signup" || mode === "forgot") && (
-          <div className="auth-switch">
+          <button className="auth-submit" type="submit" disabled={busy}>
+            {busy ? "처리 중…" : meta.cta}
+          </button>
+        </form>
+
+        <div className="auth-foot">
+          {mode === "login" && <>계정이 없나요? <button type="button" onClick={() => go("signup")}>회원가입</button></>}
+          {(mode === "signup" || mode === "forgot") && (
             <button type="button" onClick={() => go("login")}>← 로그인으로 돌아가기</button>
-          </div>
-        )}
-      </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
