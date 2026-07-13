@@ -1,22 +1,22 @@
 /**
  * 지표 동기화.
  *
- * 현재: 밸류 기준표로 파생 지표(Impression/Reach/AD/PR)를 재계산한다.
- * TODO: View/Like/Comment 실측 수집.
- *   브라우저에서 인스타그램을 직접 크롤링하는 것은 CORS·약관상 불가하므로
- *   서버(백엔드)에서 Instagram Graph API(비즈니스 계정 + 토큰)로 수집한 뒤
- *   아래 fetchMetrics를 해당 엔드포인트 호출로 바꾼다.
+ * 인스타 포스팅의 실측 좋아요/댓글/팔로워를 백엔드(/api/metrics)에서 수집해 반영하고,
+ * 밸류 기준표로 파생 지표(Impression/Reach/AD/PR)를 재계산한다.
  *
- *   예시 응답: { "<postId>": { view, like, comment } }
+ * 백엔드는 Instagram Graph API Business Discovery를 사용한다(api/metrics.js).
+ * 백엔드가 미설정(토큰 없음)이면 빈 결과가 오고, 파생 지표만 재계산된다.
+ *
+ * 한계: 조회수(view)는 Business Discovery로 수집 불가 → 기존(수동 입력) 값 유지.
  */
 import { computeRow, checkUrl } from "./posting.js";
 
-const API = import.meta.env?.VITE_METRICS_API_URL;
+/** 백엔드 응답 대기 상한(ms). */
+const FETCH_TIMEOUT = 20000;
+/** 지표 API 엔드포인트 — 기본은 같은 배포의 서버리스 함수. 필요 시 env로 override. */
+const ENDPOINT = import.meta.env?.VITE_METRICS_API_URL || "/api/metrics";
 
-/** 백엔드 응답 대기 상한(ms). 초과 시 동기화가 무한 대기하지 않고 실패로 끝난다. */
-const FETCH_TIMEOUT = 15000;
-
-/** 포스팅 링크에서 플랫폼 ID 추출 */
+/** 포스팅 링크에서 플랫폼 ID(인스타 shortcode / 유튜브 id) 추출 */
 export const postIdOf = (url = "") => {
   let m = url.match(/instagram\.com\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/i);
   if (m) return m[1];
@@ -24,25 +24,38 @@ export const postIdOf = (url = "") => {
   return m ? m[1] : null;
 };
 
+/** 인스타 계정 URL → username (포스팅 경로 세그먼트는 제외) */
+export const igUsername = (url = "") => {
+  const m = String(url).match(/instagram\.com\/([^/?#]+)/i);
+  if (!m) return null;
+  const seg = m[1].replace(/^@/, "");
+  return ["p", "reel", "reels", "tv", "explore", ""].includes(seg.toLowerCase()) ? null : seg;
+};
+
 async function fetchMetrics(rows) {
-  if (!API) return {}; // 백엔드 미연동 → 실측 지표 없음
-  const ids = rows.map((r) => postIdOf(r.postingUrl)).filter(Boolean);
-  if (!ids.length) return {}; // 수집 가능한 ID 없음 → 호출 생략
+  // 실측 대상: 인스타 포스팅(계정 username + 포스팅 shortcode 둘 다 있는 건)
+  const items = [];
+  for (const r of rows) {
+    const username = igUsername(r.url);
+    const shortcode = /instagram\.com\/(?:p|reel|tv)\//i.test(r.postingUrl) ? postIdOf(r.postingUrl) : null;
+    if (username && shortcode) items.push({ username, shortcode });
+  }
+  if (!items.length) return {};
 
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT);
   try {
-    const res = await fetch(`${API}/metrics`, {
+    const res = await fetch(ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ items }),
       signal: ctl.signal,
     });
+    if (res.status === 404) return {}; // 백엔드 함수 없음(로컬 등) → 파생 재계산만
     if (!res.ok) throw new Error(`metrics API ${res.status}`);
-    return await res.json();
+    return await res.json(); // { "<shortcode>": { like, comment, follower } }
   } catch (err) {
-    if (err.name === "AbortError")
-      throw new Error(`metrics API 응답 시간 초과(${FETCH_TIMEOUT / 1000}초)`);
+    if (err.name === "AbortError") throw new Error(`metrics API 응답 시간 초과(${FETCH_TIMEOUT / 1000}초)`);
     throw err;
   } finally {
     clearTimeout(timer);
@@ -64,7 +77,7 @@ export async function syncRows(rows, rates, onTick = () => {}) {
 
   targets.forEach((r, i) => {
     const m = metrics[postIdOf(r.postingUrl)] || {};
-    // 실측 지표(m)만 덮어쓰고, 사용자가 지정한 adOverride 등 기존 값은 보존한다.
+    // 실측값(like/comment/follower)만 덮어쓰고, adOverride 등 기존 값은 보존.
     const merged = { ...r, ...m };
     out.set(r.id, { ...r, ...computeRow(merged, rates), syncedAt: now });
     onTick(Math.round(((i + 1) / targets.length) * 100));
