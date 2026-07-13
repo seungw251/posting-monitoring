@@ -47,7 +47,10 @@ export function exportRows(rows, filename = "posting-export.xlsx") {
 
 /** 시트 헤더: Posting Date(=Date) | Name | URL | Posting URL | Posting | Follower | View | Like | Comment */
 export async function parseWorkbook(file, projectId, rates) {
-  const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true });
+  // cellDates는 쓰지 않는다: SheetJS가 날짜 serial을 자정 직전(≈-52초)의 Date로 만들어
+  // KST 등 UTC+ 타임존에서 하루 밀리는 버그가 있다. serial 숫자 그대로 읽어
+  // toISO→serialToISO(순수 UTC 계산, TZ 무관)로 변환한다.
+  const wb = XLSX.read(await file.arrayBuffer());
   const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" });
 
   return json.map((r) => {
