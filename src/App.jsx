@@ -38,6 +38,9 @@ const DEFAULT_COLW = {
   reach: 90, view: 104, like: 104, comment: 104, eng: 120, adValue: 108, prValue: 118,
 };
 const COLW_KEY = "posting-monitor:colw";
+const ACTIVE_KEY = "posting-monitor:active-project"; // 새로고침 시 유지할 활성 프로젝트(브라우저별)
+const loadActiveId = () => { try { return localStorage.getItem(ACTIVE_KEY); } catch { return null; } };
+const saveActiveId = (id) => { try { localStorage.setItem(ACTIVE_KEY, id); } catch { /* 무시 */ } };
 
 export default function App() {
   const [rows, setRows] = useState([]);
@@ -73,6 +76,8 @@ export default function App() {
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   useEffect(() => { projRef.current = projects; }, [projects]);
   useEffect(() => { activeRef.current = activeId; }, [activeId]);
+  // 활성 프로젝트를 브라우저에 저장(로드 완료 후에만 — 초기 기본값이 저장을 덮어쓰지 않도록).
+  useEffect(() => { if (ready) saveActiveId(activeId); }, [activeId, ready]);
   useEffect(() => { syncRef.current = lastSync; }, [lastSync]);
   useEffect(() => { const t = setInterval(() => setTick((x) => x + 1), 30000); return () => clearInterval(t); }, []);
 
@@ -129,7 +134,10 @@ export default function App() {
           setRows(rs); rowsRef.current = rs;
           if (d.rates?.ig) { const mr = migrateRates(d.rates); setRates(mr); ratesRef.current = mr; }
           if (d.lastSync) { setLastSync(d.lastSync); syncRef.current = d.lastSync; }
-          setActiveId(ps[0].id); activeRef.current = ps[0].id;
+          // 새로고침 시 마지막으로 보던 프로젝트 복원(브라우저별). 없거나 삭제됐으면 첫 프로젝트.
+          const saved = loadActiveId();
+          const initId = ps.some((p) => p.id === saved) ? saved : ps[0].id;
+          setActiveId(initId); activeRef.current = initId;
         } else {
           // 최초 로드: 데모 데이터 없이 빈 기본 프로젝트 1개만 생성
           setProjects([DEFAULT_PROJECT]); projRef.current = [DEFAULT_PROJECT];
