@@ -30,6 +30,13 @@ const COLS = [
   { key: "prValue", label: "PR Value", kind: "num" },
 ];
 
+/* 컬럼 기본 가로폭(px) — 헤더 경계 드래그로 조절, localStorage에 저장 */
+const DEFAULT_COLW = {
+  date: 92, name: 200, postingUrl: 240, posting: 70, follower: 95, impression: 105,
+  reach: 92, view: 82, like: 78, comment: 82, eng: 104, adValue: 112, prValue: 122,
+};
+const COLW_KEY = "posting-monitor:colw";
+
 export default function App() {
   const [rows, setRows] = useState([]);
   const [projects, setProjects] = useState([DEFAULT_PROJECT]);
@@ -283,6 +290,31 @@ export default function App() {
 
   useEffect(() => { setColF({}); }, [activeId]);
 
+  /* ── 컬럼 가로폭 (헤더 경계 드래그) ── */
+  const [colW, setColW] = useState(() => {
+    try { return { ...DEFAULT_COLW, ...JSON.parse(localStorage.getItem(COLW_KEY) || "{}") }; }
+    catch { return { ...DEFAULT_COLW }; }
+  });
+  useEffect(() => { try { localStorage.setItem(COLW_KEY, JSON.stringify(colW)); } catch { /* 무시 */ } }, [colW]);
+
+  const startResize = (key, e) => {
+    e.preventDefault(); e.stopPropagation();
+    const startX = e.clientX;
+    const startW = colW[key] ?? DEFAULT_COLW[key] ?? 100;
+    const onMove = (ev) => setColW((c) => ({ ...c, [key]: Math.max(48, startW + (ev.clientX - startX)) }));
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = ""; document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize"; document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+  const resetCol = (key) => setColW((c) => ({ ...c, [key]: DEFAULT_COLW[key] }));
+  const colWidth = (key) => colW[key] ?? DEFAULT_COLW[key];
+  const tableWidth = 40 + 44 + COLS.reduce((a, c) => a + colWidth(c.key), 0);
+
   const colValues = useCallback((key) => {
     const set = new Set(projRows.map((r) => cellVal(r, key)));
     return [...set].sort((a, b) => String(a).localeCompare(String(b), "ko"));
@@ -464,7 +496,12 @@ export default function App() {
                 : <>조건에 맞는 포스팅이 없습니다.<br />탭이나 필터를 조정해 보세요.</>}
             </div>
           ) : (
-            <table>
+            <table className="resizable" style={{ width: tableWidth }}>
+              <colgroup>
+                <col style={{ width: 40 }} />
+                <col style={{ width: 44 }} />
+                {COLS.map((c) => <col key={c.key} style={{ width: colWidth(c.key) }} />)}
+              </colgroup>
               <thead>
                 <tr>
                   <th className="l chk">
@@ -500,6 +537,9 @@ export default function App() {
                             onClose={() => setOpenCol(null)}
                           />
                         )}
+                        <span className="col-rz" title="드래그로 폭 조절 · 더블클릭 초기화"
+                          onMouseDown={(e) => startResize(c.key, e)}
+                          onDoubleClick={() => resetCol(c.key)} />
                       </th>
                     );
                   })}

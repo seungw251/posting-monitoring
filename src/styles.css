@@ -194,6 +194,18 @@ tbody tr.sumrow:hover td{background:#FAFBFD}
 .hot{color:var(--ink);font-weight:800}
 td.synced{background:var(--ok-soft);color:var(--ok);font-weight:800}
 tbody tr:hover td.synced{background:#D8F1E6}
+
+/* ══ 컬럼 폭 조절(리사이즈) ══ */
+table.resizable{table-layout:fixed}
+table.resizable td{overflow:hidden;text-overflow:ellipsis}
+table.resizable td .acc-url,
+table.resizable td .plink,
+table.resizable td .story-txt,
+table.resizable td .who-t b,
+table.resizable td .who-t small{display:block;max-width:100%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.col-rz{position:absolute;top:0;right:0;width:7px;height:100%;cursor:col-resize;z-index:6;user-select:none}
+.col-rz:hover{background:var(--acc)}
 .ico{background:none;border:none;cursor:pointer;font-size:13px;color:var(--ink-3);padding:5px 6px;border-radius:7px}
 .ico:hover{background:var(--acc-soft);color:var(--acc)}
 .empty{padding:64px 20px;text-align:center;color:var(--ink-3);font-size:13.5px;font-weight:600;line-height:1.75}
