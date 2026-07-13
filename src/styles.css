@@ -173,6 +173,9 @@ tbody tr:hover td{background:#FBFBFE}
 .who-t .handle{display:block;font-size:10.5px;color:var(--ink-3);font-weight:700;text-decoration:none;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px}
 .who-t .handle:hover{color:var(--acc);text-decoration:underline}
+.who-t .acc-url{display:block;font-size:11px;color:var(--acc);font-weight:600;text-decoration:none;
+  max-width:none;white-space:nowrap;overflow:visible;text-overflow:clip}
+.who-t .acc-url:hover{text-decoration:underline}
 th.no,td.no{width:44px;color:var(--ink-3);font-weight:700}
 td.date{color:var(--ink-2);font-weight:700}
 .post-c{display:flex;flex-direction:column;gap:3px;align-items:flex-start}
@@ -181,7 +184,7 @@ tr.sumrow td{background:#FAFBFD;border-top:2px solid var(--line);border-bottom:n
   font-weight:800;font-size:12.5px;position:sticky;bottom:0}
 tbody tr.sumrow:hover td{background:#FAFBFD}
 .plink{font-size:11.5px;font-weight:600;color:var(--acc);text-decoration:none;display:inline-block;
-  max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+  max-width:none;overflow:visible;white-space:nowrap;vertical-align:middle}
 .plink:hover{text-decoration:underline}
 .plink.bad{color:var(--err)}
 .hot{color:var(--ink);font-weight:800}
