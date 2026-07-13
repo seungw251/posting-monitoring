@@ -88,9 +88,8 @@
 
 .cards{margin-bottom:14px}
 .card.sum .card-h small{margin-left:auto;font-size:11px;font-weight:700;color:var(--ink-3)}
-.sum-g{display:grid;grid-template-columns:repeat(7,1fr);gap:14px 10px}
-@media(max-width:1180px){.sum-g{grid-template-columns:repeat(5,1fr)}}
-@media(max-width:820px){.sum-g{grid-template-columns:repeat(3,1fr)}}
+.sum-g{display:flex;flex-wrap:nowrap;gap:12px;align-items:flex-start}
+@media(max-width:820px){.sum-g{flex-wrap:wrap}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
 .card-h{display:flex;align-items:center;gap:8px;margin-bottom:13px}
 .card-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:11px;flex-shrink:0}
@@ -102,7 +101,7 @@
 .stat span{display:block;font-size:10.5px;color:var(--ink-3);font-weight:700;margin-top:1px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .stat.ok b{color:var(--ok)} .stat.err b{color:var(--err)} .stat.warn b{color:var(--warn)}
-.stat.grp{grid-column:span 2}
+.stat.grp{flex:2}
 .stat.grp span{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.35}
 .stat .sub{font-style:normal;font-weight:700;color:var(--ink-3)}
 
