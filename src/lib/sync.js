@@ -80,7 +80,11 @@ export async function syncRows(rows, rates, onTick = () => {}) {
     const m = metrics[postIdOf(r.postingUrl)] || {};
     // 실측값(like/comment/follower)만 덮어쓰고, adOverride 등 기존 값은 보존.
     const merged = { ...r, ...m };
-    out.set(r.id, { ...r, ...computeRow(merged, rates), syncedAt: now });
+    // 이전 동기화 대비 증감 기준선: 직전 동기화가 있었을 때만 현재값을 스냅샷.
+    const prev = r.syncedAt
+      ? { view: r.view || 0, like: r.like || 0, comment: r.comment || 0, follower: r.follower || 0 }
+      : null;
+    out.set(r.id, { ...r, ...computeRow(merged, rates), prev, syncedAt: now });
     onTick(Math.round(((i + 1) / targets.length) * 100));
   });
 

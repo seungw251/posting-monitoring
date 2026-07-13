@@ -32,8 +32,8 @@ const COLS = [
 
 /* 컬럼 기본 가로폭(px) — 헤더 경계 드래그로 조절, localStorage에 저장 */
 const DEFAULT_COLW = {
-  date: 92, name: 200, postingUrl: 240, posting: 70, follower: 95, impression: 105,
-  reach: 92, view: 82, like: 78, comment: 82, eng: 104, adValue: 112, prValue: 122,
+  date: 92, name: 190, postingUrl: 210, posting: 66, follower: 118, impression: 100,
+  reach: 90, view: 104, like: 104, comment: 104, eng: 120, adValue: 108, prValue: 118,
 };
 const COLW_KEY = "posting-monitor:colw";
 
@@ -591,13 +591,13 @@ export default function App() {
                         </div>
                       </td>
                       <td>{r.posting}</td>
-                      <td>{fmt(r.follower)}</td>
+                      <td>{fmt(r.follower)}<Delta prev={r.prev?.follower} cur={r.follower} /></td>
                       <td className="hot">{fmt(r.impression)}</td>
                       <td>{fmt(r.reach)}</td>
-                      <td className={synced ? "synced" : ""}>{fmt(r.view)}</td>
-                      <td className={synced ? "synced" : ""}>{fmt(r.like)}</td>
-                      <td className={synced ? "synced" : ""}>{fmt(r.comment)}</td>
-                      <td className={`hot ${synced ? "synced" : ""}`}>{fmt(eng)}</td>
+                      <td className={synced ? "synced" : ""}>{fmt(r.view)}<Delta prev={r.prev?.view} cur={r.view} /></td>
+                      <td className={synced ? "synced" : ""}>{fmt(r.like)}<Delta prev={r.prev?.like} cur={r.like} /></td>
+                      <td className={synced ? "synced" : ""}>{fmt(r.comment)}<Delta prev={r.prev?.comment} cur={r.comment} /></td>
+                      <td className={`hot ${synced ? "synced" : ""}`}>{fmt(eng)}<Delta prev={r.prev ? (r.prev.like || 0) + (r.prev.comment || 0) : undefined} cur={eng} /></td>
                       <td>₩{fmt(r.adValue)}</td>
                       <td className="hot">₩{fmt(r.prValue)}</td>
                     </tr>
@@ -838,6 +838,15 @@ export default function App() {
       {toast && <div className="toast" role="status">{toast}</div>}
     </div>
   );
+}
+
+/* 이전 동기화 대비 증감 (▲상승 / ▼하락). prev 없으면 표시 안 함. */
+function Delta({ prev, cur }) {
+  if (prev == null) return null;
+  const d = (cur || 0) - (prev || 0);
+  if (!d) return null;
+  const up = d > 0;
+  return <i className={`dlt ${up ? "up" : "down"}`}>{up ? "▲" : "▼"}{fmt(Math.abs(d))}</i>;
 }
 
 function ConfigNeeded() {
