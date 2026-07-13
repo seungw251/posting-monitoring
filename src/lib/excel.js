@@ -15,6 +15,36 @@ const pick = (row, keyCache, aliases) => {
   return "";
 };
 
+/** 현재 행들을 워크북으로 변환 (동기화된 실측값·파생값 포함) */
+export function buildWorkbook(rows) {
+  const data = (rows || []).map((r) => ({
+    "Posting Date": r.date,
+    "Name": r.name,
+    "URL": r.url,
+    "Posting URL": r.postingUrl,
+    "Posting": r.posting,
+    "Follower": r.follower,
+    "Impression": r.impression,
+    "Reach": r.reach,
+    "View": r.view,
+    "Like": r.like,
+    "Comment": r.comment,
+    "Engagement": (r.like || 0) + (r.comment || 0),
+    "AD Value": r.adValue,
+    "PR Value": r.prValue,
+    "Synced At": r.syncedAt || "",
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Postings");
+  return wb;
+}
+
+/** 워크북을 파일로 내려받기 (브라우저에서 다운로드 트리거) */
+export function exportRows(rows, filename = "posting-export.xlsx") {
+  XLSX.writeFile(buildWorkbook(rows), filename);
+}
+
 /** 시트 헤더: Posting Date(=Date) | Name | URL | Posting URL | Posting | Follower | View | Like | Comment */
 export async function parseWorkbook(file, projectId, rates) {
   const wb = XLSX.read(await file.arrayBuffer(), { cellDates: true });

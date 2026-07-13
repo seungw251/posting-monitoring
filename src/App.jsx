@@ -5,7 +5,7 @@ import { isConfigured } from "./lib/supabase.js";
 import { fmt, fmtShort, num, uid, timeAgo, stamp } from "./lib/format.js";
 import { CHANNELS, DEFAULT_RATES, migrateRates, rateFor, tierLabel } from "./lib/rates.js";
 import { cellVal, checkUrl, computeRow, isStory, postType } from "./lib/posting.js";
-import { parseWorkbook } from "./lib/excel.js";
+import { parseWorkbook, exportRows } from "./lib/excel.js";
 import { syncRows } from "./lib/sync.js";
 import { loadState, saveState } from "./lib/storage.js";
 import { DEFAULT_PROJECT, PALETTE } from "./data/seed.js";
@@ -433,6 +433,12 @@ export default function App() {
             <button className="btn acc" onClick={runSync} disabled={!!syncing || !projRows.length}>
               {syncing ? `동기화 ${syncing}%` : "⟳ 동기화"}
             </button>
+            <button className="btn" onClick={() => {
+              if (!filtered.length) { showToast("추출할 데이터가 없습니다."); return; }
+              const nm = `${active.name}_포스팅_${new Date().toISOString().slice(0, 10)}`.replace(/[\\/:*?"<>|]/g, "_");
+              exportRows(filtered, `${nm}.xlsx`);
+              showToast(`${filtered.length}건을 엑셀로 추출했습니다`);
+            }}>⤓ 엑셀 추출</button>
             <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={onFile} />
             <button className="btn pri" onClick={() => fileRef.current?.click()}>＋ 포스팅 등록 (엑셀)</button>
             </>}
