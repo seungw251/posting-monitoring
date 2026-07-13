@@ -11,8 +11,8 @@
  */
 import { computeRow, checkUrl } from "./posting.js";
 
-/** 백엔드 응답 대기 상한(ms). */
-const FETCH_TIMEOUT = 20000;
+/** 백엔드 응답 대기 상한(ms). 스크래핑(Apify)은 시간이 걸릴 수 있어 넉넉히. */
+const FETCH_TIMEOUT = 55000;
 /** 지표 API 엔드포인트 — 기본은 같은 배포의 서버리스 함수. 필요 시 env로 override. */
 const ENDPOINT = import.meta.env?.VITE_METRICS_API_URL || "/api/metrics";
 
@@ -36,9 +36,10 @@ async function fetchMetrics(rows) {
   // 실측 대상: 인스타 포스팅(계정 username + 포스팅 shortcode 둘 다 있는 건)
   const items = [];
   for (const r of rows) {
-    const username = igUsername(r.url);
-    const shortcode = /instagram\.com\/(?:p|reel|tv)\//i.test(r.postingUrl) ? postIdOf(r.postingUrl) : null;
-    if (username && shortcode) items.push({ username, shortcode });
+    const isIgPost = /instagram\.com\/(?:p|reel|tv)\//i.test(r.postingUrl);
+    if (!isIgPost) continue;
+    const shortcode = postIdOf(r.postingUrl);
+    if (shortcode) items.push({ username: igUsername(r.url), shortcode, url: r.postingUrl });
   }
   if (!items.length) return {};
 

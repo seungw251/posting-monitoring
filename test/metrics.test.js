@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { collect, shortcodeOf } from "../api/metrics.js";
+import { collect, collectApify, shortcodeOf } from "../api/metrics.js";
 import { igUsername, postIdOf } from "../src/lib/sync.js";
 
 test("shortcodeOf: permalink에서 shortcode 추출", () => {
@@ -46,6 +46,29 @@ test("collect: username별 조회 후 shortcode→지표 매핑", async () => {
   });
   const res = await collect([{ username: "suesasha", shortcode: "DXgobeRTtNH" }], graph);
   assert.deepEqual(res, { DXgobeRTtNH: { like: 699, comment: 7, follower: 250000 } });
+});
+
+test("collectApify: 데이터셋 아이템 → shortcode별 like/comment/view 매핑", async () => {
+  const apify = async (url, opts) => {
+    const input = JSON.parse(opts.body);
+    assert.ok(input.directUrls.includes("https://www.instagram.com/reel/DXom2vWj4p5/"));
+    return {
+      ok: true,
+      json: async () => [
+        { shortCode: "DXom2vWj4p5", likesCount: 3093, commentsCount: 30, videoViewCount: 76000, ownerFollowersCount: 191000 },
+        { url: "https://www.instagram.com/p/DXgobeRTtNH/", likesCount: 699, commentsCount: 7 },
+      ],
+    };
+  };
+  const res = await collectApify(
+    [
+      { url: "https://www.instagram.com/reel/DXom2vWj4p5/", shortcode: "DXom2vWj4p5" },
+      { url: "https://www.instagram.com/p/DXgobeRTtNH/", shortcode: "DXgobeRTtNH" },
+    ],
+    apify
+  );
+  assert.deepEqual(res.DXom2vWj4p5, { like: 3093, comment: 30, view: 76000, follower: 191000 });
+  assert.deepEqual(res.DXgobeRTtNH, { like: 699, comment: 7 }); // 이미지 → view 없음
 });
 
 test("collect: 못 찾은 shortcode는 결과에 없음, 개별 실패는 전체를 막지 않음", async () => {
