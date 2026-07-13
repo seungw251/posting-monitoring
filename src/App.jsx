@@ -420,11 +420,10 @@ export default function App() {
               <small>{filtered.length}건 합계</small>
             </div>
             <div className="sum-g">
-              <div className="stat"><b>{fmt(filtered.length)}</b><span>Rows (리스트)</span></div>
-              <div className="stat"><b>{fmt(kpi.influencers)}</b><span>Influencer</span></div>
-              <div className="stat"><b>{fmt(kpi.story)}</b><span>IG Story</span></div>
-              <div className="stat"><b>{fmt(kpi.urlCnt)}</b><span>URL</span></div>
-              <div className="stat"><b>{fmt(kpi.post)}</b><span>Posting</span></div>
+              <div className="stat grp"><b>{fmt(filtered.length)}</b>
+                <span>리스트 <i className="sub">(인플루언서 {fmt(kpi.influencers)})</i></span></div>
+              <div className="stat grp"><b>{fmt(kpi.post)}</b>
+                <span>포스팅 <i className="sub">(IG 스토리 {fmt(kpi.story)}, URL {fmt(kpi.post - kpi.story)})</i></span></div>
               <div className="stat"><b>{fmtShort(kpi.follower)}</b><span>Follower</span></div>
               <div className="stat"><b>{fmtShort(kpi.imp)}</b><span>Impression</span></div>
               <div className="stat"><b>{fmtShort(kpi.view)}</b><span>View</span></div>
