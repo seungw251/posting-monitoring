@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 
 import ColFilter from "./components/ColFilter.jsx";
 import { isConfigured } from "./lib/supabase.js";
-import { fmt, fmtShort, num, uid, timeAgo, stamp, handleOf } from "./lib/format.js";
+import { fmt, fmtShort, num, uid, timeAgo, stamp } from "./lib/format.js";
 import { CHANNELS, DEFAULT_RATES, migrateRates, rateFor, tierLabel } from "./lib/rates.js";
 import { cellVal, checkUrl, computeRow, isStory, postType } from "./lib/posting.js";
 import { parseWorkbook } from "./lib/excel.js";
@@ -505,8 +505,8 @@ export default function App() {
                           <div className="who-t">
                             <b>{r.name}</b>
                             {r.url
-                              ? <a className="handle" href={r.url} target="_blank" rel="noreferrer" title={r.url}>
-                                  @{handleOf(r.url)}
+                              ? <a className="acc-url" href={r.url} target="_blank" rel="noreferrer" title={r.url}>
+                                  {r.url}
                                 </a>
                               : <small>계정 URL 없음</small>}
                           </div>
