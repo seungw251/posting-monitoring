@@ -4,7 +4,7 @@ import ColFilter from "./components/ColFilter.jsx";
 import { isConfigured } from "./lib/supabase.js";
 import { fmt, fmtShort, num, uid, timeAgo, stamp, handleOf } from "./lib/format.js";
 import { CHANNELS, DEFAULT_RATES, migrateRates, rateFor, tierLabel } from "./lib/rates.js";
-import { cellVal, checkUrl, computeRow, dedupeKey, isStory, postType } from "./lib/posting.js";
+import { cellVal, checkUrl, computeRow, isStory, postType } from "./lib/posting.js";
 import { parseWorkbook } from "./lib/excel.js";
 import { syncRows } from "./lib/sync.js";
 import { loadState, saveState } from "./lib/storage.js";
@@ -149,15 +149,8 @@ export default function App() {
         return;
       }
 
-      /* 중복 제외 */
-      const seen = new Set(rowsRef.current.map(dedupeKey));
-      const fresh = [], dups = [];
-      for (const r of rowsOk) {
-        const k = dedupeKey(r);
-        if (seen.has(k)) { dups.push(r); continue; }
-        seen.add(k);
-        fresh.push(r);
-      }
+      /* 중복 체크 없음 — 엑셀의 모든 유효 행을 그대로 등록 */
+      const fresh = rowsOk, dups = [];
 
       /* 링크 유효성 — 등록 대상 중 오류 건 분리 */
       const good = [], bad = [];
@@ -694,7 +687,6 @@ export default function App() {
 
             <div className="up-g">
               <div className="up-s ok"><b>{fmt(upResult.added)}</b><span>등록됨</span></div>
-              <div className="up-s warn"><b>{fmt(upResult.dup)}</b><span>중복 제외</span></div>
               <div className="up-s err"><b>{fmt(upResult.badRemoved || 0)}</b><span>링크 오류 제외</span></div>
               <div className="up-s"><b>{fmt(upResult.total)}</b><span>총 행수</span></div>
             </div>
@@ -720,8 +712,7 @@ export default function App() {
             )}
 
             <p className="note">
-              중복 기준: 같은 인플루언서 + 같은 포스팅 링크 (날짜 무관).
-              IG STORY는 고유 링크가 없어 이름 + 날짜로 판정합니다.
+              중복 체크 없이 엑셀의 모든 행을 등록합니다. 같은 파일을 다시 올리면 중복으로 쌓일 수 있으니 주의하세요.
             </p>
             <div className="mft">
               <button className="btn acc" onClick={() => setUpResult(null)}>확인</button>
