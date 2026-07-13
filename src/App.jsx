@@ -313,7 +313,9 @@ export default function App() {
   };
   const resetCol = (key) => setColW((c) => ({ ...c, [key]: DEFAULT_COLW[key] }));
   const colWidth = (key) => colW[key] ?? DEFAULT_COLW[key];
-  const tableWidth = 40 + 44 + COLS.reduce((a, c) => a + colWidth(c.key), 0);
+  // 폭을 비율(%)로 렌더 → 표는 항상 컨테이너 폭(100%)에 맞고, 리사이즈는 비율만 바꿈(가로 스크롤 없음).
+  const totalW = 40 + 44 + COLS.reduce((a, c) => a + colWidth(c.key), 0);
+  const pct = (w) => `${(w / totalW) * 100}%`;
 
   const colValues = useCallback((key) => {
     const set = new Set(projRows.map((r) => cellVal(r, key)));
@@ -496,11 +498,11 @@ export default function App() {
                 : <>조건에 맞는 포스팅이 없습니다.<br />탭이나 필터를 조정해 보세요.</>}
             </div>
           ) : (
-            <table className="resizable" style={{ width: tableWidth }}>
+            <table className="resizable" style={{ width: "100%" }}>
               <colgroup>
-                <col style={{ width: 40 }} />
-                <col style={{ width: 44 }} />
-                {COLS.map((c) => <col key={c.key} style={{ width: colWidth(c.key) }} />)}
+                <col style={{ width: pct(40) }} />
+                <col style={{ width: pct(44) }} />
+                {COLS.map((c) => <col key={c.key} style={{ width: pct(colWidth(c.key)) }} />)}
               </colgroup>
               <thead>
                 <tr>
