@@ -515,7 +515,7 @@ export default function App() {
                       <td className="l">
                         <div className="post-c">
                           {story
-                            ? <span className="story-txt">IG STORY</span>
+                            ? <span className="story-txt">{r.postingUrl}</span>
                             : <a className={`plink ${chk.ok ? "" : "bad"}`}
                                 href={r.postingUrl} target="_blank" rel="noreferrer"
                                 title={chk.ok ? r.postingUrl : `링크 오류: ${chk.reason}`}>
