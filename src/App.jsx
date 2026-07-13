@@ -510,6 +510,7 @@ export default function App() {
                   const eng = (r.like || 0) + (r.comment || 0);
                   const story = isStory(r.postingUrl);
                   const chk = story ? null : checkUrl(r.postingUrl); // 행당 1회만 검증
+                  const synced = !!r.syncedAt && !story; // 동기화로 실측된 포스팅
                   return (
                     <tr key={r.id} className={sel.includes(r.id) ? "on" : ""}>
                       <td className="l chk">
@@ -545,10 +546,10 @@ export default function App() {
                       <td>{fmt(r.follower)}</td>
                       <td className="hot">{fmt(r.impression)}</td>
                       <td>{fmt(r.reach)}</td>
-                      <td>{fmt(r.view)}</td>
-                      <td>{fmt(r.like)}</td>
-                      <td>{fmt(r.comment)}</td>
-                      <td className="hot">{fmt(eng)}</td>
+                      <td className={synced ? "synced" : ""}>{fmt(r.view)}</td>
+                      <td className={synced ? "synced" : ""}>{fmt(r.like)}</td>
+                      <td className={synced ? "synced" : ""}>{fmt(r.comment)}</td>
+                      <td className={`hot ${synced ? "synced" : ""}`}>{fmt(eng)}</td>
                       <td>₩{fmt(r.adValue)}</td>
                       <td className="hot">₩{fmt(r.prValue)}</td>
                     </tr>

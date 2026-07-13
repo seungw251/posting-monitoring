@@ -192,6 +192,8 @@ tbody tr.sumrow:hover td{background:#FAFBFD}
 .plink:hover{text-decoration:underline}
 .plink.bad{color:var(--err)}
 .hot{color:var(--ink);font-weight:800}
+td.synced{background:var(--ok-soft);color:var(--ok);font-weight:800}
+tbody tr:hover td.synced{background:#D8F1E6}
 .ico{background:none;border:none;cursor:pointer;font-size:13px;color:var(--ink-3);padding:5px 6px;border-radius:7px}
 .ico:hover{background:var(--acc-soft);color:var(--acc)}
 .empty{padding:64px 20px;text-align:center;color:var(--ink-3);font-size:13.5px;font-weight:600;line-height:1.75}
