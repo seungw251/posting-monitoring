@@ -2,7 +2,8 @@
  * Vercel Serverless — 인스타그램 실측 지표 수집.
  *
  * 우선순위:
- *   1) APIFY_TOKEN 설정 시 → Apify Instagram Scraper 사용(좋아요·댓글·조회수까지).
+ *   1) APIFY_TOKEN 설정 시 → Apify Instagram Scraper 사용(좋아요·댓글·조회수 + 프로필 팔로워).
+ *      팔로워는 포스트 출력엔 없으므로 소유자 프로필(details)을 별도 스크랩해 매핑한다.
  *   2) 아니면 IG_USER_ID + IG_ACCESS_TOKEN 설정 시 → Graph API Business Discovery(좋아요·댓글·팔로워, 조회수 없음).
  *   3) 아무것도 없으면 → 빈 결과(프론트는 파생값만 재계산).
  *
@@ -30,13 +31,9 @@ export const shortcodeOf = (permalink = "") => {
 };
 
 /* ── 1) Apify Instagram Scraper ─────────────────────────────────────────── */
-export async function collectApify(items, fetchImpl = fetch) {
-  const urls = [...new Set((items || []).map((it) => it?.url).filter(Boolean))];
-  if (!urls.length) return {};
 
-  // addParentData: true → 포스트에 소유자(프로필) 데이터가 붙어 팔로워 수를 수집할 수 있다.
-  // false면 ownerFollowersCount가 비어 팔로워가 갱신되지 않는다.
-  const input = { directUrls: urls, resultsType: "posts", resultsLimit: 1, addParentData: true };
+/** Apify 액터를 동기 실행하고 데이터셋 아이템 배열을 돌려준다. */
+async function runApify(input, fetchImpl = fetch) {
   const endpoint = `https://api.apify.com/v2/acts/${APIFY_ACTOR}/run-sync-get-dataset-items`
     + `?token=${encodeURIComponent(APIFY_TOKEN)}`;
   const res = await fetchImpl(endpoint, {
@@ -46,19 +43,71 @@ export async function collectApify(items, fetchImpl = fetch) {
   });
   if (!res.ok) throw new Error(`apify ${res.status}`);
   const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+/**
+ * 소유자 프로필에서 팔로워 수 수집.
+ * 포스트(posts) 출력에는 팔로워 수가 없고 프로필(details) 출력에만 있으므로,
+ * 계정 username 을 프로필 URL 로 만들어 별도 스크랩한다.
+ * @returns {Object} { "<username(소문자)>": followersCount }
+ */
+export async function collectFollowers(usernames, fetchImpl = fetch) {
+  const list = [...new Set((usernames || []).filter(Boolean).map((u) => String(u).toLowerCase()))];
+  if (!list.length) return {};
+  const directUrls = list.map((u) => `https://www.instagram.com/${u}/`);
+  const data = await runApify(
+    { directUrls, resultsType: "details", resultsLimit: 1 },
+    fetchImpl
+  );
+  const out = {};
+  for (const pr of data) {
+    const u = (pr.username || pr.ownerUsername || "").toLowerCase();
+    const f = pr.followersCount ?? pr.followersCount ?? pr.followers ?? null;
+    if (u && f != null) out[u] = f;
+  }
+  return out;
+}
+
+export async function collectApify(items, fetchImpl = fetch) {
+  const list = items || [];
+  const urls = [...new Set(list.map((it) => it?.url).filter(Boolean))];
+  if (!urls.length) return {};
+
+  // 포스트 지표(좋아요·댓글·조회수)와 프로필 팔로워를 병렬 수집.
+  // 팔로워 스크랩이 실패해도 나머지 지표는 유지되도록 격리한다.
+  const owners = list.map((it) => it?.username).filter(Boolean);
+  const [posts, followers] = await Promise.all([
+    runApify({ directUrls: urls, resultsType: "posts", resultsLimit: 1, addParentData: false }, fetchImpl),
+    collectFollowers(owners, fetchImpl).catch((e) => {
+      console.error("apify followers:", e.message);
+      return {};
+    }),
+  ]);
+
+  // shortcode → 소유자 username (items 우선, 없으면 포스트의 ownerUsername)
+  const scToUser = new Map();
+  for (const it of list) {
+    if (it?.shortcode && it?.username) scToUser.set(it.shortcode, String(it.username).toLowerCase());
+  }
 
   const out = {};
-  for (const p of Array.isArray(data) ? data : []) {
+  for (const p of posts) {
     const sc = p.shortCode || p.shortcode || shortcodeOf(p.url || p.inputUrl || "");
     if (!sc) continue;
     const view = p.videoViewCount ?? p.videoPlayCount ?? p.igPlayCount ?? null;
-    const follower = p.ownerFollowersCount ?? p.owner?.followersCount ?? null;
     out[sc] = {
       like: p.likesCount ?? 0,
       comment: p.commentsCount ?? 0,
       ...(view != null ? { view } : {}),
-      ...(follower != null ? { follower } : {}),
     };
+    if (!scToUser.has(sc) && p.ownerUsername) scToUser.set(sc, String(p.ownerUsername).toLowerCase());
+  }
+
+  // 소유자 팔로워를 각 포스트에 매핑
+  for (const [sc, row] of Object.entries(out)) {
+    const f = followers[scToUser.get(sc)];
+    if (f != null) row.follower = f;
   }
   return out;
 }
