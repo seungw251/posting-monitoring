@@ -178,7 +178,8 @@ export default function App() {
     if (!targets.length) { showToast("동기화할 포스팅이 없습니다."); return; }
     setSyncing(1);
     try {
-      const { updated, syncedAt: now, count } = await syncRows(targets, ratesRef.current, setSyncing);
+      // 진행률은 알 수 없으므로 %를 계산하지 않는다(바는 애니메이션). syncing은 진행 플래그로만 사용.
+      const { updated, syncedAt: now, count } = await syncRows(targets, ratesRef.current);
       const next = rowsRef.current.map((r) => updated.get(r.id) || r);
       const ls = { ...syncRef.current, [pid]: now };
       setRows(next); rowsRef.current = next;
@@ -475,7 +476,7 @@ export default function App() {
           <div className="tabacts">
             {tab === "Total" && <>
             <button className="btn acc" onClick={runSync} disabled={!!syncing || !projRows.length}>
-              {syncing ? `동기화 ${syncing}%` : "⟳ 동기화"}
+              {syncing ? "동기화 중…" : "⟳ 동기화"}
             </button>
             <button className="btn" onClick={() => {
               if (!filtered.length) { showToast("추출할 데이터가 없습니다."); return; }
@@ -492,7 +493,7 @@ export default function App() {
 
       {/* ══ 본문 ══ */}
       <div className="wrap">
-        {!!syncing && <div className="syncbar"><i style={{ width: `${syncing}%` }} /></div>}
+        {!!syncing && <div className="syncbar"><i /></div>}
 
 {tab === "Total" ? (
       <>

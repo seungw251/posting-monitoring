@@ -48,27 +48,45 @@ test("collect: username별 조회 후 shortcode→지표 매핑", async () => {
   assert.deepEqual(res, { DXgobeRTtNH: { like: 699, comment: 7, follower: 250000 } });
 });
 
-test("collectApify: 데이터셋 아이템 → shortcode별 like/comment/view 매핑", async () => {
+test("collectApify: 포스트 지표 + 프로필 팔로워 병합", async () => {
+  // 액터는 두 번 호출된다: resultsType posts(지표) / details(프로필 팔로워)
   const apify = async (url, opts) => {
     const input = JSON.parse(opts.body);
-    assert.ok(input.directUrls.includes("https://www.instagram.com/reel/DXom2vWj4p5/"));
-    return {
-      ok: true,
-      json: async () => [
-        { shortCode: "DXom2vWj4p5", likesCount: 3093, commentsCount: 30, videoViewCount: 76000, ownerFollowersCount: 191000 },
-        { url: "https://www.instagram.com/p/DXgobeRTtNH/", likesCount: 699, commentsCount: 7 },
-      ],
-    };
+    if (input.resultsType === "posts") {
+      assert.ok(input.directUrls.includes("https://www.instagram.com/reel/DXom2vWj4p5/"));
+      return {
+        ok: true,
+        json: async () => [
+          { shortCode: "DXom2vWj4p5", likesCount: 3093, commentsCount: 30, videoViewCount: 76000, ownerUsername: "suesasha" },
+          { url: "https://www.instagram.com/p/DXgobeRTtNH/", likesCount: 699, commentsCount: 7, ownerUsername: "suesasha" },
+        ],
+      };
+    }
+    assert.equal(input.resultsType, "details"); // 프로필 스크랩
+    assert.ok(input.directUrls.includes("https://www.instagram.com/suesasha/"));
+    return { ok: true, json: async () => [{ username: "suesasha", followersCount: 191000 }] };
   };
   const res = await collectApify(
     [
-      { url: "https://www.instagram.com/reel/DXom2vWj4p5/", shortcode: "DXom2vWj4p5" },
-      { url: "https://www.instagram.com/p/DXgobeRTtNH/", shortcode: "DXgobeRTtNH" },
+      { url: "https://www.instagram.com/reel/DXom2vWj4p5/", shortcode: "DXom2vWj4p5", username: "suesasha" },
+      { url: "https://www.instagram.com/p/DXgobeRTtNH/", shortcode: "DXgobeRTtNH", username: "suesasha" },
     ],
     apify
   );
   assert.deepEqual(res.DXom2vWj4p5, { like: 3093, comment: 30, view: 76000, follower: 191000 });
-  assert.deepEqual(res.DXgobeRTtNH, { like: 699, comment: 7 }); // 이미지 → view 없음
+  assert.deepEqual(res.DXgobeRTtNH, { like: 699, comment: 7, follower: 191000 }); // 이미지 → view 없음
+});
+
+test("collectApify: 프로필 팔로워 스크랩 실패해도 나머지 지표는 유지", async () => {
+  const apify = async (url, opts) => {
+    const input = JSON.parse(opts.body);
+    if (input.resultsType === "posts") {
+      return { ok: true, json: async () => [{ shortCode: "AAA", likesCount: 10, commentsCount: 2 }] };
+    }
+    return { ok: false, status: 500, json: async () => ({}) }; // details 실패
+  };
+  const res = await collectApify([{ url: "https://www.instagram.com/p/AAA/", shortcode: "AAA", username: "x" }], apify);
+  assert.deepEqual(res.AAA, { like: 10, comment: 2 }); // follower 없이도 like/comment 유지
 });
 
 test("collect: 못 찾은 shortcode는 결과에 없음, 개별 실패는 전체를 막지 않음", async () => {
