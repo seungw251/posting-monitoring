@@ -386,6 +386,17 @@ export default function App() {
     }), { post: 0, imp: 0, reach: 0, view: 0, like: 0, comment: 0, eng: 0, ad: 0, pr: 0,
           follower: 0, story: 0, urlCnt: 0 });
     k.influencers = new Set(filtered.map((r) => r.name)).size;
+    // 전회 동기화 대비 증감 합계(스냅샷 prev가 있는 행만 집계). 리스트의 Delta와 동일 기준.
+    k.delta = filtered.reduce((a, r) => {
+      if (!r.prev) return a;
+      return {
+        follower: a.follower + ((r.follower || 0) - (r.prev.follower || 0)),
+        view: a.view + ((r.view || 0) - (r.prev.view || 0)),
+        like: a.like + ((r.like || 0) - (r.prev.like || 0)),
+        comment: a.comment + ((r.comment || 0) - (r.prev.comment || 0)),
+      };
+    }, { follower: 0, view: 0, like: 0, comment: 0 });
+    k.delta.eng = k.delta.like + k.delta.comment;
     return k;
   }, [filtered]);
 
@@ -509,12 +520,12 @@ export default function App() {
                 <span>리스트 <i className="sub">(인플루언서 {fmt(kpi.influencers)})</i></span></div>
               <div className="stat grp"><b>{fmt(kpi.post)}</b>
                 <span>포스팅 <i className="sub">(IG 스토리 {fmt(kpi.story)}, URL {fmt(kpi.post - kpi.story)})</i></span></div>
-              <div className="stat"><b>{fmtShort(kpi.follower, 1)}</b><span>Follower</span></div>
+              <div className="stat"><b>{fmtShort(kpi.follower, 1)}<Delta prev={0} cur={kpi.delta.follower} format={(n) => fmtShort(n, 1)} /></b><span>Follower</span></div>
               <div className="stat"><b>{fmtShort(kpi.imp)}</b><span>Impression</span></div>
-              <div className="stat"><b>{fmtShort(kpi.view)}</b><span>View</span></div>
-              <div className="stat"><b>{fmt(kpi.like)}</b><span>Like</span></div>
-              <div className="stat"><b>{fmt(kpi.comment)}</b><span>Comment</span></div>
-              <div className="stat"><b>{fmt(kpi.eng)}</b><span>Engagement</span></div>
+              <div className="stat"><b>{fmtShort(kpi.view)}<Delta prev={0} cur={kpi.delta.view} format={fmtShort} /></b><span>View</span></div>
+              <div className="stat"><b>{fmt(kpi.like)}<Delta prev={0} cur={kpi.delta.like} /></b><span>Like</span></div>
+              <div className="stat"><b>{fmt(kpi.comment)}<Delta prev={0} cur={kpi.delta.comment} /></b><span>Comment</span></div>
+              <div className="stat"><b>{fmt(kpi.eng)}<Delta prev={0} cur={kpi.delta.eng} /></b><span>Engagement</span></div>
               <div className="stat"><b>₩{fmtShort(kpi.ad)}</b><span>AD Value</span></div>
               <div className="stat"><b>₩{fmtShort(kpi.pr)}</b><span>PR Value</span></div>
             </div>
@@ -885,13 +896,13 @@ export default function App() {
   );
 }
 
-/* 이전 동기화 대비 증감 (▲상승 / ▼하락). prev 없으면 표시 안 함. */
-function Delta({ prev, cur }) {
+/* 이전 동기화 대비 증감 (▲상승 / ▼하락). prev 없으면 표시 안 함. format으로 표기 방식 지정. */
+function Delta({ prev, cur, format = fmt }) {
   if (prev == null) return null;
   const d = (cur || 0) - (prev || 0);
   if (!d) return null;
   const up = d > 0;
-  return <i className={`dlt ${up ? "up" : "down"}`}>{up ? "▲" : "▼"}{fmt(Math.abs(d))}</i>;
+  return <i className={`dlt ${up ? "up" : "down"}`}>{up ? "▲" : "▼"}{format(Math.abs(d))}</i>;
 }
 
 function Splash({ msg }) {
